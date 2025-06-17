@@ -19,7 +19,7 @@
 
 OCRFlux is a multimodal large language model based toolkit for converting PDFs and images into clean, readable, plain Markdown text. It aims to push the current state-of-the-art to a significantly higher level.
 
-Try the online demo: [coming soon](https://XXX)
+Try the online demo: [OCRFlux Demo](https://ocrflux.pdfparser.io/)
 
 Functions: **Whole file parsing**
 - On each page
@@ -169,7 +169,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
       </tbody>
     </table>
 
-We also conduct some case studies to show the superiority of our model in the blog article (Comming soon).
+We also conduct some case studies to show the superiority of our model in the [blog](https://ocrflux.pdfparser.io/#/blog) article.
 
 ### Benchmark for cross-page table/paragraph merging
 
@@ -177,7 +177,7 @@ PDF documents are typically paginated, which often results in tables or paragrap
 
 The detection task can be formulated as follows: given the Markdowns of two consecutive pages—each structured as a list of Markdown elements (e.g., paragraphs and tables)—the goal is to identify the indexes of elements that should be merged across the pages.
 
-Then for the merging task, if the elements to be merged are paragraphs, we can just concate them. However, for two table fragments, their merging is much more challenging. For example, the table spanning multiple pages will repeat the header of the first page on the second page. Another difficult scenario is that the table cell contains long content that spans multiple lines within the cell, with the first few lines appearing on the previous page and the remaining lines continuing on the next page. We also observe some cases where tables with a large number of columns are split vertically and placed on two consecutive pages. More examples of cross-page tables can be found in our blog article (Comming soon). To address these issues, we develop the LLM model for cross-page table merging. Specifically, this model takes two split table fragments as input and generates a complete, well-structured table as output.
+Then for the merging task, if the elements to be merged are paragraphs, we can just concate them. However, for two table fragments, their merging is much more challenging. For example, the table spanning multiple pages will repeat the header of the first page on the second page. Another difficult scenario is that the table cell contains long content that spans multiple lines within the cell, with the first few lines appearing on the previous page and the remaining lines continuing on the next page. We also observe some cases where tables with a large number of columns are split vertically and placed on two consecutive pages. More examples of cross-page tables can be found in our [blog](https://ocrflux.pdfparser.io/#/blog) article. To address these issues, we develop the LLM model for cross-page table merging. Specifically, this model takes two split table fragments as input and generates a complete, well-structured table as output.
 
 We ship two comprehensive benchmarks to help measure the performance of our OCR system in cross-page table/paragraph detection and merging tasks respectively:
 
