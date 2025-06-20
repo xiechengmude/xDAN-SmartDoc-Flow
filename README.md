@@ -76,7 +76,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
       </thead>
       <tbody>
         <tr>
-          <td rowspan="3">English</td>
+          <td rowspan="4">English</td>
           <td><a href="https://huggingface.co/allenai/olmOCR-7B-0225-preview">olmOCR-7B-0225-preview</a></td>
           <td>0.885</td>
         </tr>
@@ -85,11 +85,15 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.870</td>
         </tr>
         <tr>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td>0.828</td>
+        </tr>
+        <tr>
           <td><strong>OCRFlux-3B</strong></td>
           <td>0.971</td>
         </tr>
         <tr>
-          <td rowspan="3">Chinese</td>
+          <td rowspan="4">Chinese</td>
           <td><a href="https://huggingface.co/allenai/olmOCR-7B-0225-preview">olmOCR-7B-0225-preview</a></td>
           <td>0.859</td>
         </tr>
@@ -98,17 +102,25 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.846</td>
         </tr>
         <tr>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td>0.731</td>
+        </tr>
+        <tr>
           <td><strong>OCRFlux-3B</strong></td>
           <td>0.962</td>
         </tr>
         <tr>
-          <td rowspan="3">Total</td>
+          <td rowspan="4">Total</td>
           <td><a href="https://huggingface.co/allenai/olmOCR-7B-0225-preview">olmOCR-7B-0225-preview</a></td>
           <td>0.872</td>
         </tr>
         <tr>
           <td><a href="https://huggingface.co/nanonets/Nanonets-OCR-s">Nanonets-OCR-s</a></td>
           <td>0.858</td>
+        </tr>
+        <tr>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td>0.780</td>
         </tr>
         <tr>
           <td><strong>OCRFlux-3B</strong></td>
@@ -128,7 +140,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
       </thead>
       <tbody>
         <tr>
-          <td rowspan="3">Simple</td>
+          <td rowspan="4">Simple</td>
           <td><a href="https://huggingface.co/allenai/olmOCR-7B-0225-preview">olmOCR-7B-0225-preview</a></td>
           <td>0.810</td>
         </tr>
@@ -137,11 +149,15 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.882</td>
         </tr>
         <tr>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td>0.880</td>
+        </tr>
+        <tr>
           <td><strong>OCRFlux-3B</strong></td>
           <td>0.912</td>
         </tr>
         <tr>
-          <td rowspan="3">Complex</td>
+          <td rowspan="4">Complex</td>
           <td><a href="https://huggingface.co/allenai/olmOCR-7B-0225-preview">olmOCR-7B-0225-preview</a></td>
           <td>0.676</td>
         </tr>
@@ -150,17 +166,25 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.772</td>
         </tr>
         <tr>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td>0.826</td>
+        </tr>
+        <tr>
           <td><strong>OCRFlux-3B</strong></td>
           <td>0.807</td>
         </tr>
         <tr>
-          <td rowspan="3">Total</td>
+          <td rowspan="4">Total</td>
           <td><a href="https://huggingface.co/allenai/olmOCR-7B-0225-preview">olmOCR-7B-0225-preview</a></td>
           <td>0.744</td>
         </tr>
         <tr>
           <td><a href="https://huggingface.co/nanonets/Nanonets-OCR-s">Nanonets-OCR-s</a></td>
           <td>0.828</td>
+        </tr>
+        <tr>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td>0.853</td>
         </tr>
         <tr>
           <td><strong>OCRFlux-3B</strong></td>
