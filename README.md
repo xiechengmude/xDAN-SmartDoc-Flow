@@ -35,7 +35,7 @@ Functions: **Whole file parsing**
 Key features:
 - Superior parsing quality on each page
 
-    It respectively achieves 0.095 higher (from 0.872 to 0.967) and 0.109 higher (from 0.858 to 0.967) Edit Distance Similarity (EDS) on our released benchmark [OCRFlux-bench-single](https://huggingface.co/datasets/ChatDOC/OCRFlux-bench-single) than the baseline model [olmOCR-7B-0225-preview](https://huggingface.co/allenai/olmOCR-7B-0225-preview) and [Nanonets-OCR-s](https://huggingface.co/nanonets/Nanonets-OCR-s).
+    It respectively achieves 0.095 higher (from 0.872 to 0.967), 0.109 higher (from 0.858 to 0.967) and 0.187 higher (from 0.780 to 0.967) Edit Distance Similarity (EDS) on our released benchmark [OCRFlux-bench-single](https://huggingface.co/datasets/ChatDOC/OCRFlux-bench-single) than the baseline model [olmOCR-7B-0225-preview](https://huggingface.co/allenai/olmOCR-7B-0225-preview), [Nanonets-OCR-s](https://huggingface.co/nanonets/Nanonets-OCR-s) and [MonkeyOCR](https://huggingface.co/echo840/MonkeyOCR).
 
 - Native support for cross-page table/paragraph merging  (to our best this is the first to support this feature in all the open sourced project).
 
@@ -85,7 +85,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.870</td>
         </tr>
         <tr>
-          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">MonkeyOCR</a></td>
           <td>0.828</td>
         </tr>
         <tr>
@@ -102,7 +102,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.846</td>
         </tr>
         <tr>
-          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">MonkeyOCR</a></td>
           <td>0.731</td>
         </tr>
         <tr>
@@ -119,7 +119,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.858</td>
         </tr>
         <tr>
-          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">MonkeyOCR</a></td>
           <td>0.780</td>
         </tr>
         <tr>
@@ -149,7 +149,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.882</td>
         </tr>
         <tr>
-          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">MonkeyOCR</a></td>
           <td>0.880</td>
         </tr>
         <tr>
@@ -166,7 +166,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.772</td>
         </tr>
         <tr>
-          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">MonkeyOCR</a></td>
           <td>0.826</td>
         </tr>
         <tr>
@@ -183,7 +183,7 @@ We emphasize that the released benchmarks are NOT included in our training and e
           <td>0.828</td>
         </tr>
         <tr>
-          <td><a href="https://huggingface.co/echo840/MonkeyOCR">Monkey-OCR</a></td>
+          <td><a href="https://huggingface.co/echo840/MonkeyOCR">MonkeyOCR</a></td>
           <td>0.853</td>
         </tr>
         <tr>
