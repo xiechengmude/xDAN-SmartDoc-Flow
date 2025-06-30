@@ -9,7 +9,7 @@
   <a href="https://github.com/chatdoc-com/OCRFlux/releases">
     <img alt="GitHub release" src="./images/release.svg" height="20">
   </a>
-  <a href="XXX">
+  <a href="https://ocrflux.pdfparser.io/">
     <img alt="Demo" src="./images/demo.svg" height="20">
   </a>
   <a href="https://discord.gg/F33mhsAqqg">
