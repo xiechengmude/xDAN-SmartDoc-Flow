@@ -4,14 +4,13 @@ import atexit
 import base64
 import json
 import logging
-import multiprocessing
+import shutil
 import os
 import copy
 import random
 import re
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from io import BytesIO
 from urllib.parse import urlparse
@@ -61,10 +60,7 @@ logging.getLogger("pypdf").setLevel(logging.ERROR)
 metrics = MetricsKeeper(window=60 * 5)
 tracker = WorkerTracker()
 
-# Process pool for offloading cpu bound work, max 32 workers, otherwise it can spawn way too many workers on a big machine
-process_pool = ProcessPoolExecutor(max_workers=min(multiprocessing.cpu_count() // 2 + 1, 32), mp_context=multiprocessing.get_context("spawn"))
-
-async def build_page_to_markdown_query(args, pdf_path: str, page_number: int, target_longest_image_dim: int, image_rotation: int = 0) -> dict:
+def build_page_to_markdown_query(args, pdf_path: str, page_number: int, target_longest_image_dim: int, image_rotation: int = 0) -> dict:
     assert image_rotation in [0, 90, 180, 270], "Invalid image rotation provided in build_page_query"
 
     image = get_page_image(pdf_path, page_number, target_longest_image_dim=target_longest_image_dim, image_rotation=image_rotation)
@@ -86,7 +82,7 @@ async def build_page_to_markdown_query(args, pdf_path: str, page_number: int, ta
         "temperature": 0.0,
     }
 
-async def build_element_merge_detect_query(args,text_list_1,text_list_2) -> dict:
+def build_element_merge_detect_query(args,text_list_1,text_list_2) -> dict:
     image = Image.new('RGB', (28, 28), color='black')
 
     buffered = BytesIO()
@@ -108,7 +104,7 @@ async def build_element_merge_detect_query(args,text_list_1,text_list_2) -> dict
         "temperature": 0.0,
     }
 
-async def build_html_table_merge_query(args,text_1,text_2) -> dict:
+def build_html_table_merge_query(args,text_1,text_2) -> dict:
     image = Image.new('RGB', (28, 28), color='black')
 
     buffered = BytesIO()
@@ -205,13 +201,13 @@ async def process_task(args, worker_id, task_name, task_args):
     while attempt < MAX_RETRIES:
         if task_name == 'page_to_markdown':
             pdf_path,page_number = task_args
-            query = await build_page_to_markdown_query(args, pdf_path, page_number, args.target_longest_image_dim, image_rotation=local_image_rotation)
+            query = build_page_to_markdown_query(args, pdf_path, page_number, args.target_longest_image_dim, image_rotation=local_image_rotation)
         elif task_name == 'element_merge_detect':
             text_list_1,text_list_2 = task_args
-            query = await build_element_merge_detect_query(args, text_list_1, text_list_2)
+            query = build_element_merge_detect_query(args, text_list_1, text_list_2)
         elif task_name == 'html_table_merge':
             table_1,table_2 = task_args
-            query = await build_html_table_merge_query(args, table_1, table_2)
+            query = build_html_table_merge_query(args, table_1, table_2)
         query["temperature"] = TEMPERATURE_BY_ATTEMPT[
             min(attempt, len(TEMPERATURE_BY_ATTEMPT) - 1)
         ]  # Change temperature as number of attempts increases to overcome repetition issues at expense of quality
@@ -325,7 +321,7 @@ def bulid_document_text(page_to_markdown_result, element_merge_detect_result, ht
     return "\n\n".join(document_text_list)
 
 async def process_pdf(args, worker_id: int, pdf_path: str):
-    logger.info("Start process_pdf for {pdf_path}")
+    logger.info(f"Start process_pdf for {pdf_path}")
     if pdf_path.lower().endswith(".pdf"):
         try:
             reader = PdfReader(pdf_path)
@@ -346,7 +342,7 @@ async def process_pdf(args, worker_id: int, pdf_path: str):
                 task = tg.create_task(process_task(args, worker_id, task_name='page_to_markdown', task_args=(pdf_path,page_num)))
                 tasks.append(task)
         
-        results = await asyncio.gather(*tasks)
+        results = [task.result() for task in tasks]
 
         fallback_pages = []
         page_to_markdown_result = {}
@@ -394,7 +390,7 @@ async def process_pdf(args, worker_id: int, pdf_path: str):
             for page_1,page_2 in page_pairs:
                 task = tg.create_task(process_task(args, worker_id, task_name='element_merge_detect', task_args=(page_to_markdown_result[page_1], page_to_markdown_result[page_2])))
                 tasks.append(task)
-        results = await asyncio.gather(*tasks)
+        results = [task.result() for task in tasks]
         
         element_merge_detect_result = {}
         table_pairs = []
@@ -434,7 +430,7 @@ async def process_pdf(args, worker_id: int, pdf_path: str):
                     else:
                         break
                     
-                results = await asyncio.gather(*tasks)
+                results = [task.result() for task in tasks]
 
                 for k,result in enumerate(results):
                     page_1,elem_idx_1 = ids_1[k]
@@ -505,7 +501,7 @@ async def process_json(args, worker_id: int, json_path: str):
                 logger.critical("Encountered BrokenProcessPool, exiting process.")
                 sys.exit(1)
 
-        logger.exception(f"Exception in process_pdf for {pdf_path}: {e}")
+        logger.exception(f"Exception in process_json for {json_path}: {e}")
         return None
 
 async def worker(args, work_queue: WorkQueue, semaphore, worker_id):
@@ -614,6 +610,15 @@ async def vllm_server_task(args, semaphore):
             server_printed_ready_message = True
             last_semaphore_release = time.time()
 
+        match = re.search(r"Running: (\d+)", line)
+        if match:
+            last_running_req = int(match.group(1))
+
+        match = re.search(r"(?:Waiting|Pending):\s*(\d+)", line)
+        if match:
+            last_queue_req = int(match.group(1))
+            logger.info(f"vllm running req: {last_running_req} queue req: {last_queue_req}")
+            
     async def read_stream(stream):
         while True:
             line = await stream.readline()
@@ -740,6 +745,9 @@ async def main():
     parser.add_argument("--port", type=int, default=40078, help="Port to use for the VLLM server")
     args = parser.parse_args()
 
+    if os.path.exists(args.workspace):
+        shutil.rmtree(args.workspace)
+
     # We need poppler to load the initial pdfs, even if we are not processing them here
     check_poppler_version()
 
@@ -843,9 +851,6 @@ async def main():
 
     # Wait for all worker tasks to finish
     await asyncio.gather(*worker_tasks)
-
-    # Wait for server to stop
-    process_pool.shutdown(wait=False)
 
     vllm_server.cancel()
     metrics_task.cancel()
