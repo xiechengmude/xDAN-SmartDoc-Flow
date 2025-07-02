@@ -430,15 +430,15 @@ async def process_pdf(args, worker_id: int, pdf_path: str):
                     else:
                         break
                     
-                results = [task.result() for task in tasks]
+            results = [task.result() for task in tasks]
 
-                for k,result in enumerate(results):
-                    page_1,elem_idx_1 = ids_1[k]
-                    page_2,elem_idx_2 = ids_2[k]
-                    if result != None:
-                        html_table_merge_result[(page_1,page_2,elem_idx_1,elem_idx_2)] = result
-                        tmp_page_to_markdown_result[page_1][elem_idx_1] = html_table_merge_result[(page_1,page_2,elem_idx_1,elem_idx_2)]
-                i = j
+            for k,result in enumerate(results):
+                page_1,elem_idx_1 = ids_1[k]
+                page_2,elem_idx_2 = ids_2[k]
+                if result != None:
+                    html_table_merge_result[(page_1,page_2,elem_idx_1,elem_idx_2)] = result
+                    tmp_page_to_markdown_result[page_1][elem_idx_1] = html_table_merge_result[(page_1,page_2,elem_idx_1,elem_idx_2)]
+            i = j
 
         page_texts = {}
         for page_number in page_to_markdown_result.keys():
