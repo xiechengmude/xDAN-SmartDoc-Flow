@@ -287,6 +287,22 @@ Each line in JSONL files is a json object with the following fields:
 }
 ```
 
+### API for directly calling OCRFlux (New)
+You can use the inference API to directly call OCRFlux in your codes without using an online vllm server like following:
+
+```
+from vllm import LLM
+from ocrflux.inference import parse
+
+file_path = 'test.pdf'
+# file_path = 'test.png'
+llm = LLM(model="model_dir/OCRFlux-3B",gpu_memory_utilization=0.8,max_model_len=8192)
+result = parse(llm,file_path)
+document_markdown = result['document_text']
+with open('test.md','w') as f:
+    f.write(document_markdown)
+```
+
 ### Docker Usage
 
 Requirements:
