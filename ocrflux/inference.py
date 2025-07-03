@@ -141,7 +141,7 @@ def parse(llm,file_path,skip_cross_page_merge=False,max_page_retries=0):
         page_texts = {}
         fallback_pages = []
         for page_number in range(1, num_pages+1):
-            if page_number in page_to_markdown_result.keys():
+            if page_number not in page_to_markdown_result.keys():
                 fallback_pages.append(page_number-1)
             else:
                 page_texts[str(page_number-1)] = "\n\n".join(page_to_markdown_result[page_number])
@@ -164,7 +164,7 @@ def parse(llm,file_path,skip_cross_page_merge=False,max_page_retries=0):
         element_merge_detect_keys = []
         element_merge_detect_query_list = []
         for page_num in range(1,num_pages):
-            if page_to_markdown_result[page_num] != None and page_to_markdown_result[page_num+1] != None:
+            if page_num in page_to_markdown_result.keys() and page_num+1 in page_to_markdown_result.keys():
                 element_merge_detect_query_list.append(build_element_merge_detect_query(page_to_markdown_result[page_num],page_to_markdown_result[page_num+1]))
                 element_merge_detect_keys.append((page_num,page_num+1))
         responses = llm.generate(element_merge_detect_query_list, sampling_params=sampling_params)
@@ -226,10 +226,12 @@ if __name__ == '__main__':
     file_path = 'test.pdf'
     llm = LLM(model="ChatDOC/OCRFlux-3B",gpu_memory_utilization=0.8,max_model_len=8192)
     result = parse(llm,file_path,max_page_retries=4)
-    document_markdown = result['document_text']
-    print(document_markdown)
-    with open('test.md','w') as f:
-        f.write(document_markdown)
-
+    if result != None:
+        document_markdown = result['document_text']
+        print(document_markdown)
+        with open('test.md','w') as f:
+            f.write(document_markdown)
+    else:
+        print("Parse failed")
 
 

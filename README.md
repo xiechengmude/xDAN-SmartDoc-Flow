@@ -298,10 +298,15 @@ file_path = 'test.pdf'
 # file_path = 'test.png'
 llm = LLM(model="model_dir/OCRFlux-3B",gpu_memory_utilization=0.8,max_model_len=8192)
 result = parse(llm,file_path)
-document_markdown = result['document_text']
-with open('test.md','w') as f:
-    f.write(document_markdown)
+if result != None:
+    document_markdown = result['document_text']
+    print(document_markdown)
+    with open('test.md','w') as f:
+        f.write(document_markdown)
+else:
+    print("Parse failed.")
 ```
+If parsing is failed or there are fallback pages in the result, you can try to set the argument `max_page_retries` for the `parse` function with a positive integer to get a better result. But it may cause longer inference time.
 
 ### Docker Usage
 
