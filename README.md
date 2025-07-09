@@ -315,15 +315,24 @@ Requirements:
 - Docker with GPU support [(NVIDIA Toolkit)](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 - Pre-downloaded model: [OCRFlux-3B](https://huggingface.co/ChatDOC/OCRFlux-3B)
 
-To use OCRFlux in a docker container, you can use the following example command:
+To use OCRFlux in a docker container, you can use the following example command to start the docker container firstly:
 
 ```bash
 docker run -it --gpus all \
   -v /path/to/localworkspace:/localworkspace \
-  -v /path/to/test_pdf_dir:/test_pdf_dir/ \
+  -v /path/to/test_pdf_dir:/test_pdf_dir \
   -v /path/to/OCRFlux-3B:/OCRFlux-3B \
-  chatdoc/ocrflux:latest /localworkspace --data /test_pdf_dir/* --model /OCRFlux-3B/
+  --entrypoint bash \
+  chatdoc/ocrflux:latest
 ```
+
+and then run the following command on the docker container to parse document files:
+
+```bash
+python3.12 -m ocrflux.pipeline /localworkspace/ocrflux_results --data /test_pdf_dir/*.pdf --model /OCRFlux-3B/
+```
+
+The parsing results will be stored in `/localworkspace/ocrflux_results` directory.
 
 #### Viewing Results
 Generate the final Markdown files by running the following command. Generated Markdown files will be in `./localworkspace/markdowns/DOCUMENT_NAME` directory.
