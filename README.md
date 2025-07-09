@@ -308,6 +308,48 @@ else:
 ```
 If parsing is failed or there are fallback pages in the result, you can try to set the argument `max_page_retries` for the `parse` function with a positive integer to get a better result. But it may cause longer inference time.
 
+### Local Deployment (New)
+
+Run the following command to start the server:
+
+```bash
+bash ocrflux/server.sh /path/to/model port
+```
+
+For example, the following command:
+
+```bash
+bash ocrflux/server.sh ChatDOC/OCRFlux-3B 30024
+```
+
+It will start a vllm server on port 30024. You can also start server by yourself using other methods like `sglang`.
+
+After the server is started, you can use the `request` api to request it to parse a pdf file or an image file like following:
+
+```
+import asyncio
+from argparse import Namespace
+from ocrflux.client import request
+args = Namespace(
+    model="/path/to/OCRFlux-3B",
+    skip_cross_page_merge=False,
+    max_page_retries=1,
+    url="http://localhost",
+    port=30024,
+)
+file_path = 'test.pdf'
+# file_path = 'test.png'
+result = asyncio.run(request(args,file_path))
+if result != None:
+    document_markdown = result['document_text']
+    print(document_markdown)
+    with open('test.md','w') as f:
+        f.write(document_markdown)
+else:
+    print("Parse failed.")
+```
+
+
 ### Docker Usage
 
 Requirements:
@@ -332,7 +374,10 @@ and then run the following command on the docker container to parse document fil
 python3.12 -m ocrflux.pipeline /localworkspace/ocrflux_results --data /test_pdf_dir/*.pdf --model /OCRFlux-3B/
 ```
 
-The parsing results will be stored in `/localworkspace/ocrflux_results` directory.
+The parsing results will be stored in `/localworkspace/ocrflux_results` directory. Run the following command to generate the final Markdown files:
+```bash
+python -m ocrflux.jsonl_to_markdown ./localworkspace/ocrflux_results
+```
 
 #### Viewing Results
 Generate the final Markdown files by running the following command. Generated Markdown files will be in `./localworkspace/markdowns/DOCUMENT_NAME` directory.
