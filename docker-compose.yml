@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  vllm-server:
+    image: vllm/vllm-openai:latest
+    container_name: ocrflux-vllm
+    ports:
+      - "30024:30024"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    command: >
+      --model ChatDOC/OCRFlux-3B
+      --port 30024
+      --max-model-len 8192
+      --gpu-memory-utilization 0.8
+      --max-num-seqs 256
+      --max-num-batched-tokens 8192
+      --dtype auto
+      --trust-remote-code
+      --enable-prefix-caching
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:30024/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: ocrflux-api
+    ports:
+      - "8000:8000"
+    environment:
+      - VLLM_URL=http://vllm-server
+      - VLLM_PORT=30024
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    depends_on:
+      vllm-server:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
