@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""
+Document Conversion API Server for OCRFlux
+Provides REST API endpoints for PDF/image to Markdown/text conversion
+"""
+
+import os
+import tempfile
+import logging
+from pathlib import Path
+from typing import Optional, Dict, Any
+from datetime import datetime
+
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from vllm import LLM
+from ocrflux.inference import parse
+from contextlib import asynccontextmanager
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Global LLM instance
+llm: Optional[LLM] = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for FastAPI"""
+    # Startup
+    global llm
+    try:
+        model_path = os.getenv("MODEL_PATH", "ChatDOC/OCRFlux-3B")
+        gpu_memory_utilization = float(os.getenv("GPU_MEMORY_UTILIZATION", "0.8"))
+        max_model_len = int(os.getenv("MAX_MODEL_LEN", "8192"))
+        
+        logger.info(f"Initializing LLM with model: {model_path}")
+        llm = LLM(
+            model=model_path,
+            gpu_memory_utilization=gpu_memory_utilization,
+            max_model_len=max_model_len,
+            trust_remote_code=True
+        )
+        logger.info("LLM initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize LLM: {str(e)}")
+        raise
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down API server")
+
+# Initialize FastAPI app with lifespan
+app = FastAPI(
+    title="OCRFlux Document Conversion API",
+    description="API server for converting PDFs and images to Markdown/text using OCRFlux",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Request/Response models
+class ConversionRequest(BaseModel):
+    """Request model for URL-based conversion"""
+    url: str = Field(..., description="URL of the PDF or image to convert")
+    output_format: str = Field("markdown", description="Output format: 'markdown' or 'text'")
+    max_page_retries: int = Field(0, description="Maximum retries for failed pages")
+
+class ConversionResponse(BaseModel):
+    """Response model for conversion results"""
+    status: str = Field(..., description="Conversion status: 'success' or 'error'")
+    format: str = Field(..., description="Output format: 'markdown' or 'text'")
+    content: Optional[str] = Field(None, description="Converted content")
+    error: Optional[str] = Field(None, description="Error message if conversion failed")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "model_loaded": llm is not None,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/convert/file", response_model=ConversionResponse)
+async def convert_file(
+    file: UploadFile = File(..., description="PDF or image file to convert"),
+    output_format: str = Form("markdown", description="Output format: 'markdown' or 'text'"),
+    max_page_retries: int = Form(0, description="Maximum retries for failed pages")
+):
+    """Convert uploaded PDF or image file to Markdown or text"""
+    if not llm:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
+    # Validate file type
+    allowed_extensions = {'.pdf', '.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif'}
+    file_ext = Path(file.filename).suffix.lower()
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}"
+        )
+    
+    # Save uploaded file to temp location
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+            content = await file.read()
+            tmp_file.write(content)
+            tmp_file_path = tmp_file.name
+        
+        logger.info(f"Processing file: {file.filename}")
+        
+        # Parse with OCRFlux
+        result = parse(llm, tmp_file_path, max_page_retries=max_page_retries)
+        
+        if result is None:
+            return ConversionResponse(
+                status="error",
+                format=output_format,
+                error="Failed to parse document"
+            )
+        
+        # Extract content
+        document_text = result.get('document_text', '')
+        
+        # Convert to plain text if requested
+        if output_format == "text":
+            # Simple markdown to text conversion (remove markdown syntax)
+            import re
+            plain_text = document_text
+            # Remove headers
+            plain_text = re.sub(r'^#{1,6}\s+', '', plain_text, flags=re.MULTILINE)
+            # Remove bold/italic
+            plain_text = re.sub(r'\*{1,2}([^\*]+)\*{1,2}', r'\1', plain_text)
+            # Remove links
+            plain_text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', plain_text)
+            # Remove code blocks
+            plain_text = re.sub(r'```[^`]*```', '', plain_text, flags=re.DOTALL)
+            plain_text = re.sub(r'`([^`]+)`', r'\1', plain_text)
+            document_text = plain_text.strip()
+        
+        # Prepare metadata
+        metadata = {
+            "filename": file.filename,
+            "file_size": len(content),
+            "pages_processed": result.get('pages_processed', 0),
+            "fallback_pages": result.get('fallback_pages', [])
+        }
+        
+        return ConversionResponse(
+            status="success",
+            format=output_format,
+            content=document_text,
+            metadata=metadata
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing file: {str(e)}")
+        return ConversionResponse(
+            status="error",
+            format=output_format,
+            error=str(e)
+        )
+    finally:
+        # Cleanup temp file
+        if 'tmp_file_path' in locals() and os.path.exists(tmp_file_path):
+            os.unlink(tmp_file_path)
+
+@app.post("/convert/url", response_model=ConversionResponse)
+async def convert_url(request: ConversionRequest):
+    """Convert PDF or image from URL to Markdown or text"""
+    if not llm:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+    
+    try:
+        import requests
+        
+        # Download file from URL
+        response = requests.get(request.url, timeout=30)
+        response.raise_for_status()
+        
+        # Determine file extension from URL or content-type
+        from urllib.parse import urlparse
+        url_path = urlparse(request.url).path
+        file_ext = Path(url_path).suffix.lower()
+        
+        if not file_ext:
+            # Try to guess from content-type
+            content_type = response.headers.get('content-type', '').lower()
+            if 'pdf' in content_type:
+                file_ext = '.pdf'
+            elif 'image' in content_type:
+                file_ext = '.png'
+            else:
+                raise HTTPException(status_code=400, detail="Cannot determine file type from URL")
+        
+        # Save to temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+            tmp_file.write(response.content)
+            tmp_file_path = tmp_file.name
+        
+        logger.info(f"Processing URL: {request.url}")
+        
+        # Parse with OCRFlux
+        result = parse(llm, tmp_file_path, max_page_retries=request.max_page_retries)
+        
+        if result is None:
+            return ConversionResponse(
+                status="error",
+                format=request.output_format,
+                error="Failed to parse document"
+            )
+        
+        # Extract and format content
+        document_text = result.get('document_text', '')
+        
+        if request.output_format == "text":
+            # Convert markdown to plain text
+            import re
+            plain_text = document_text
+            plain_text = re.sub(r'^#{1,6}\s+', '', plain_text, flags=re.MULTILINE)
+            plain_text = re.sub(r'\*{1,2}([^\*]+)\*{1,2}', r'\1', plain_text)
+            plain_text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', plain_text)
+            plain_text = re.sub(r'```[^`]*```', '', plain_text, flags=re.DOTALL)
+            plain_text = re.sub(r'`([^`]+)`', r'\1', plain_text)
+            document_text = plain_text.strip()
+        
+        metadata = {
+            "url": request.url,
+            "pages_processed": result.get('pages_processed', 0),
+            "fallback_pages": result.get('fallback_pages', [])
+        }
+        
+        return ConversionResponse(
+            status="success",
+            format=request.output_format,
+            content=document_text,
+            metadata=metadata
+        )
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error downloading URL: {str(e)}")
+        return ConversionResponse(
+            status="error",
+            format=request.output_format,
+            error=f"Failed to download URL: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Error processing URL: {str(e)}")
+        return ConversionResponse(
+            status="error",
+            format=request.output_format,
+            error=str(e)
+        )
+    finally:
+        # Cleanup temp file
+        if 'tmp_file_path' in locals() and os.path.exists(tmp_file_path):
+            os.unlink(tmp_file_path)
+
+@app.get("/convert/file/{file_id}/download")
+async def download_conversion(file_id: str):
+    """Download converted file (for future implementation with file storage)"""
+    # This endpoint can be implemented later for storing and retrieving converted files
+    raise HTTPException(status_code=501, detail="Download feature not yet implemented")
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    host = os.getenv("API_HOST", "0.0.0.0")
+    port = int(os.getenv("API_PORT", "8001"))
+    
+    uvicorn.run(app, host=host, port=port)
