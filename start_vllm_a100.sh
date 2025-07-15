@@ -8,7 +8,7 @@ MODEL_PATH=${1:-"ChatDOC/OCRFlux-3B"}
 PORT=${2:-8003}
 
 # A100 40GB optimized settings
-MAX_MODEL_LEN=${MAX_MODEL_LEN:-16384}              # Increased from 8192
+MAX_MODEL_LEN=${MAX_MODEL_LEN:-32768}              # Increased from 8192
 GPU_MEMORY_UTILIZATION=${GPU_MEMORY_UTILIZATION:-0.95}  # Increased from 0.8
 MAX_NUM_SEQS=${MAX_NUM_SEQS:-10}                # Increased from 256
 MAX_NUM_BATCHED_TOKENS=${MAX_NUM_BATCHED_TOKENS:-32768}  # Increased from 8192
