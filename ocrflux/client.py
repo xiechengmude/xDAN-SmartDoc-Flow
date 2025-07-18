@@ -28,8 +28,8 @@ def build_page_to_markdown_query(args, file_path: str, page_number: int, target_
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": build_page_to_markdown_prompt()},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
+                    {"type": "text", "text": build_page_to_markdown_prompt()},
                 ],
             }
         ],
@@ -50,8 +50,8 @@ def build_element_merge_detect_query(args,text_list_1,text_list_2) -> dict:
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": build_element_merge_detect_prompt(text_list_1,text_list_2)},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
+                    {"type": "text", "text": build_element_merge_detect_prompt(text_list_1,text_list_2)},
                 ],
             }
         ],
@@ -72,8 +72,8 @@ def build_html_table_merge_query(args,text_1,text_2) -> dict:
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": build_html_table_merge_prompt(text_1,text_2)},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
+                    {"type": "text", "text": build_html_table_merge_prompt(text_1,text_2)},
                 ],
             }
         ],
