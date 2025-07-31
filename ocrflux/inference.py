@@ -10,8 +10,8 @@ from ocrflux.prompts import PageResponse, build_page_to_markdown_prompt, build_e
 def build_qwen2_5_vl_prompt(question):
     return (
             "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n"
-            f"<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>"
-            f"{question}<|im_end|>\n"
+            f"<|im_start|>user\n"
+            f"{question}<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n"
             "<|im_start|>assistant\n"
     )
 
@@ -110,7 +110,7 @@ def parse(llm,file_path,skip_cross_page_merge=False,max_page_retries=0):
         
         attempt = 0
         while len(retry_list) > 0 and attempt < max_page_retries:
-            retry_page_to_markdown_query_list = [build_page_to_markdown_query(file_path,page_num) for page_num in retry_list]
+            retry_page_to_markdown_query_list = [build_page_to_markdown_query(file_path,i+1) for i in retry_list]
             retry_sampling_params = SamplingParams(temperature=0.1*attempt, max_tokens=8192)
             responses = llm.generate(retry_page_to_markdown_query_list, sampling_params=retry_sampling_params)
             results = [response.outputs[0].text for response in responses]
