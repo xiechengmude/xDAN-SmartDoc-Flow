@@ -17,7 +17,7 @@ classifiers = [
 authors = [
     {name = "Yu Tang", email = "tangyu19@mails.ucas.ac.cn"}
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 dependencies = [
   "cached-path",
   "smart_open",
@@ -45,6 +45,13 @@ dependencies = [
   "apted",
   "gradio",
   "gradio_pdf",
+  # FastAPI dependencies
+  "fastapi>=0.107.0",
+  "uvicorn[standard]==0.24.0",
+  "uvloop==0.19.0",
+  "aiofiles==23.2.1",
+  "pydantic>=2.9.0",
+  "python-multipart==0.0.6",
 ]
 license = {file = "LICENSE"}
 
