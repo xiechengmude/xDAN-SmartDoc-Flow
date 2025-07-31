@@ -1,0 +1,33 @@
+# Requirements for OCRFlux Document API Server (Non-GPU)
+# This file contains dependencies needed to run the API server
+# that connects to a remote vLLM server (no local GPU required)
+
+# Core Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# HTTP Client Libraries
+requests>=2.31.0
+httpx>=0.25.0
+aiofiles>=23.2.1
+
+# Image Processing (for handling uploaded images)
+Pillow>=10.0.0
+
+# PDF Processing (for handling uploaded PDFs)
+pypdf>=3.17.0
+pypdfium2>=4.25.0
+
+# Utilities
+python-dotenv>=1.0.0  # For environment variable management
+typing-extensions>=4.8.0  # For Python typing support
+
+# Optional: For better performance
+orjson>=3.9.10  # Fast JSON parsing
+python-jose[cryptography]>=3.3.0  # For JWT tokens if needed
+
+# Optional: For monitoring and logging
+python-json-logger>=2.0.7  # Structured logging
+prometheus-client>=0.19.0  # Metrics export

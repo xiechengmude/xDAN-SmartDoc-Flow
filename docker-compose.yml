@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # vLLM Model Server
+  vllm-server:
+    image: vllm/vllm-openai:latest
+    container_name: ocrflux-vllm
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - ${MODEL_PATH:-./models}:/models
+    command: >
+      --model /models/OCRFlux-3B
+      --port 30024
+      --max-model-len 8192
+      --gpu-memory-utilization 0.8
+    ports:
+      - "30024:30024"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:30024/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ocrflux-network
+
+  # FastAPI PDF Parser Server
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: ocrflux-api
+    depends_on:
+      vllm-server:
+        condition: service_healthy
+    environment:
+      - VLLM_URL=http://vllm-server
+      - VLLM_PORT=30024
+      - MODEL_NAME=OCRFlux-3B
+      - MAX_WORKERS=10
+      - MAX_CONCURRENT_REQUESTS=20
+      - ENABLE_CROSS_PAGE_MERGE=true
+      - TEMP_DIR=/tmp/pdf_parser
+    volumes:
+      - ./temp:/tmp/pdf_parser
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ocrflux-network
+
+  # Optional: Redis for production job storage
+  redis:
+    image: redis:7-alpine
+    container_name: ocrflux-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ocrflux-network
+
+  # Optional: Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ocrflux-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - ocrflux-network
+
+networks:
+  ocrflux-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  prometheus-data:

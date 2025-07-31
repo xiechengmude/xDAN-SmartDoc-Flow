@@ -1,0 +1,38 @@
+# FastAPI PDF Parser Server Dockerfile
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    poppler-utils \
+    poppler-data \
+    ttf-mscorefonts-installer \
+    fonts-crosextra-caladea \
+    fonts-crosextra-carlito \
+    gsfonts \
+    lcdf-typetools \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements
+COPY requirements-fastapi.txt .
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements-fastapi.txt
+RUN pip install --no-cache-dir -e . --find-links https://flashinfer.ai/whl/cu124/torch2.5/flashinfer/
+
+# Copy application code
+COPY ocrflux/ ./ocrflux/
+COPY fastapi_pdf_server.py .
+
+# Create temp directory
+RUN mkdir -p /tmp/pdf_parser
+
+# Expose port
+EXPOSE 8000
+
+# Run the application
+CMD ["uvicorn", "fastapi_pdf_server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--loop", "uvloop"]
