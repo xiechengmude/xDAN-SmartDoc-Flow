@@ -279,6 +279,9 @@ You can set `--skip_cross_page_merge` to skip the cross-page merging in the pars
 
 You can set `--gpu_memory_utilization` to set GPU memory utiliziation, e.g. `--gpu_memory_utilization 0.9`, default is 0.8.
 
+OCRFlux is recommended to run on a GPU with more than 24GB of VRAM. However, if you have N smaller GPUs (e.g., 12GB), you can set `--tensor_parallel_size N` to run it.
+
+
 Results will be stored as JSONL files in the `./localworkspace/results` directory. 
 
 Each line in JSONL files is a json object with the following fields:
@@ -398,8 +401,9 @@ python -m ocrflux.jsonl_to_markdown ./localworkspace/ocrflux_results
 ```bash
 python -m ocrflux.pipeline --help
 usage: pipeline.py [-h] [--task {pdf2markdown,merge_pages,merge_tables}] [--data [DATA ...]] [--pages_per_group PAGES_PER_GROUP] [--max_page_retries MAX_PAGE_RETRIES]
-                   [--max_page_error_rate MAX_PAGE_ERROR_RATE] [--gpu_memory_utilization GPU_MEMORY_UTILIZATION] [--workers WORKERS] [--model MODEL] [--model_max_context MODEL_MAX_CONTEXT]
-                   [--model_chat_template MODEL_CHAT_TEMPLATE] [--target_longest_image_dim TARGET_LONGEST_IMAGE_DIM] [--skip_cross_page_merge] [--port PORT]
+                   [--max_page_error_rate MAX_PAGE_ERROR_RATE] [--gpu_memory_utilization GPU_MEMORY_UTILIZATION] [--tensor_parallel_size TENSOR_PARALLEL_SIZE]
+                   [--dtype {auto,half,float16,float,bfloat16,float32}] [--workers WORKERS] [--model MODEL] [--model_max_context MODEL_MAX_CONTEXT] [--model_chat_template MODEL_CHAT_TEMPLATE]
+                   [--target_longest_image_dim TARGET_LONGEST_IMAGE_DIM] [--skip_cross_page_merge] [--port PORT]
                    workspace
 
 Manager for running millions of PDFs through a batch inference pipeline
@@ -420,6 +424,10 @@ options:
                         Rate of allowable failed pages in a document, 1/250 by default
   --gpu_memory_utilization GPU_MEMORY_UTILIZATION
                         Fraction of GPU memory to use, default is 0.8
+  --tensor_parallel_size TENSOR_PARALLEL_SIZE
+                        Number of tensor parallel replicas
+  --dtype {auto,half,float16,float,bfloat16,float32}
+                        Data type for model weights and activations.
   --workers WORKERS     Number of workers to run at a time
   --model MODEL         The path to the model
   --model_max_context MODEL_MAX_CONTEXT

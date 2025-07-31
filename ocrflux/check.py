@@ -31,14 +31,6 @@ def check_torch_gpu_available(min_gpu_memory: int = 20 * 1024**3):
         logger.error("Pytorch must be installed, visit https://pytorch.org/ for installation instructions")
         raise
 
-    try:
-        gpu_memory = torch.cuda.get_device_properties(0).total_memory
-        assert gpu_memory >= min_gpu_memory
-    except:
-        logger.error(f"Torch was not able to find a GPU with at least {min_gpu_memory // (1024 ** 3)} GB of RAM.")
-        raise
-
-
 if __name__ == "__main__":
     check_poppler_version()
     check_vllm_version()

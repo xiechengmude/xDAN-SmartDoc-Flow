@@ -246,7 +246,7 @@ async def process_task(args, worker_id, task_name, task_args):
                         markdown_element_list.append(new_text)
                     else:
                         markdown_element_list.append(text)
-                return_data = markdown_element_list
+                return_data = "\n\n".join(markdown_element_list)
                     
             elif task_name == 'element_merge_detect':
                 return_data = eval(response_content)
@@ -571,6 +571,10 @@ async def vllm_server_task(args, semaphore):
         str(args.model_max_context),
         "--gpu_memory_utilization",
         str(args.gpu_memory_utilization),
+        "--tensor_parallel_size",
+        str(args.tensor_parallel_size),
+        "--dtype",
+        str(args.dtype)
     ]
 
     proc = await asyncio.create_subprocess_exec(
@@ -731,6 +735,8 @@ async def main():
     parser.add_argument("--max_page_retries", type=int, default=8, help="Max number of times we will retry rendering a page")
     parser.add_argument("--max_page_error_rate", type=float, default=0.004, help="Rate of allowable failed pages in a document, 1/250 by default")
     parser.add_argument("--gpu_memory_utilization", type=float, default=0.8, help="Fraction of GPU memory to use, default is 0.8")
+    parser.add_argument("--tensor_parallel_size", type=int, default=1, help="Number of tensor parallel replicas")
+    parser.add_argument("--dtype", type=str, choices=['auto','half','float16', 'float', 'bfloat16', 'float32'], default="auto", help="Data type for model weights and activations.")
     parser.add_argument("--workers", type=int, default=8, help="Number of workers to run at a time")
 
     # Model parameters
