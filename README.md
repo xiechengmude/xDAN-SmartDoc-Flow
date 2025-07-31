@@ -275,13 +275,14 @@ For quick testing, try the [web demo](https://5f65ccdc2d4fd2f364.gradio.live). T
     python -m ocrflux.pipeline ./localworkspace --data test_pdf_dir/* --model /model_dir/OCRFlux-3B
     ```
 
-You can set `--skip_cross_page_merge` to skip the cross-page merging in the parsing process to accelerate, it would simply concatenate the parsing results of each page to generate final Markdown of the document.
+Notices:
+- You can set `--skip_cross_page_merge` to skip the cross-page merging in the parsing process to accelerate, it would simply concatenate the parsing results of each page to generate final Markdown of the document.
 
-You can set `--gpu_memory_utilization` to set GPU memory utiliziation, e.g. `--gpu_memory_utilization 0.9`, default is 0.8.
+- You can set `--gpu_memory_utilization` to set GPU memory utiliziation, e.g. `--gpu_memory_utilization 0.9`, default is 0.8.
 
-OCRFlux is recommended to run on a GPU with more than 24GB of VRAM. However, if you have multiple smaller GPUs (e.g., 12GB), you can set `--tensor_parallel_size N` to run it on N GPUs.
+- OCRFlux is recommended to run on a GPU with more than 24GB of VRAM. However, if you have multiple smaller GPUs (e.g., 12GB), you can set `--tensor_parallel_size N` to run it on N GPUs.
 
-When using OCRFlux on GPUs which do not support `bf16` like V100, you can set `--dtpye float32` instead.
+- When using OCRFlux on GPUs which do not support `bf16` like V100, you can set `--dtpye float32` instead.
 
 
 Results will be stored as JSONL files in the `./localworkspace/results` directory. 
