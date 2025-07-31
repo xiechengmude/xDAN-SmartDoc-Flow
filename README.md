@@ -279,7 +279,9 @@ You can set `--skip_cross_page_merge` to skip the cross-page merging in the pars
 
 You can set `--gpu_memory_utilization` to set GPU memory utiliziation, e.g. `--gpu_memory_utilization 0.9`, default is 0.8.
 
-OCRFlux is recommended to run on a GPU with more than 24GB of VRAM. However, if you have N smaller GPUs (e.g., 12GB), you can set `--tensor_parallel_size N` to run it.
+OCRFlux is recommended to run on a GPU with more than 24GB of VRAM. However, if you have multiple smaller GPUs (e.g., 12GB), you can set `--tensor_parallel_size N` to run it on N GPUs.
+
+When using OCRFlux on GPUs which do not support `bf16` like V100, you can set `--dtpye float32` instead.
 
 
 Results will be stored as JSONL files in the `./localworkspace/results` directory. 
