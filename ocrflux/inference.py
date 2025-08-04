@@ -46,7 +46,7 @@ def build_html_table_merge_query(text_1,text_2) -> dict:
     }
     return query
 
-def bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
+def build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
     page_to_markdown_keys = list(page_to_markdown_result.keys())
     element_merge_detect_keys = list(element_merge_detect_result.keys())
     html_table_merge_keys = list(html_table_merge_result.keys())
@@ -210,7 +210,7 @@ def parse(llm,file_path,skip_cross_page_merge=False,max_page_retries=0):
                     html_table_merge_result[key] = result
                     page_to_markdown_result_tmp[page_1][elem_idx_1] = result
 
-        document_text = bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
+        document_text = build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
         return {
             "orig_path": file_path,
             "num_pages": num_pages,

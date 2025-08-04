@@ -299,7 +299,7 @@ def postprocess_markdown_text(args, response_text, pdf_path, page_number):
             new_text_list.append(text)
     return "\n\n".join(new_text_list)
 
-def bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
+def build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
     page_to_markdown_keys = list(page_to_markdown_result.keys())
     element_merge_detect_keys = list(element_merge_detect_result.keys())
     html_table_merge_keys = list(html_table_merge_result.keys())
@@ -446,7 +446,7 @@ async def process_pdf(args, worker_id: int, pdf_path: str):
         for page_number in page_to_markdown_result.keys():
             page_texts[str(page_number-1)] = "\n\n".join(page_to_markdown_result[page_number])
         
-        document_text = bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
+        document_text = build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
 
         return {
             "orig_path": pdf_path,
