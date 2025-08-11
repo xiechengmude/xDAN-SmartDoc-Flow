@@ -27,7 +27,7 @@ from ocrflux.check import (
     check_torch_gpu_available,
 )
 from ocrflux.image_utils import get_page_image, is_image
-from ocrflux.table_format import trans_markdown_text
+from ocrflux.table_format import table_matrix2html
 from ocrflux.metrics import MetricsKeeper, WorkerTracker
 from ocrflux.prompts import PageResponse, build_page_to_markdown_prompt, build_element_merge_detect_prompt, build_html_table_merge_prompt
 from ocrflux.work_queue import LocalWorkQueue, WorkQueue
@@ -74,8 +74,8 @@ def build_page_to_markdown_query(args, pdf_path: str, page_number: int, target_l
             {
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                     {"type": "text", "text": build_page_to_markdown_prompt()},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                 ],
             }
         ],
@@ -96,8 +96,8 @@ def build_element_merge_detect_query(args,text_list_1,text_list_2) -> dict:
             {
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                     {"type": "text", "text": build_element_merge_detect_prompt(text_list_1,text_list_2)},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                 ],
             }
         ],
@@ -118,8 +118,8 @@ def build_html_table_merge_query(args,text_1,text_2) -> dict:
             {
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                     {"type": "text", "text": build_html_table_merge_prompt(text_1,text_2)},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                 ],
             }
         ],
@@ -233,21 +233,23 @@ async def process_task(args, worker_id, task_name, task_args):
             if task_name == 'page_to_markdown':
                 model_response_json = json.loads(response_content)
                 page_response = PageResponse(**model_response_json)
-                if not page_response.is_rotation_valid and attempt < MAX_RETRIES - 1:
-                    local_image_rotation = page_response.rotation_correction
-                    raise ValueError(f"invalid_page rotation")
-                try:         
-                    return_data = trans_markdown_text(page_response.natural_text,"matrix2html")
-                except:
-                    if attempt < MAX_RETRIES - 1:
-                        raise
+                natural_text = page_response.natural_text
+                markdown_element_list = []
+                for text in natural_text.split('\n\n'):
+                    if text.startswith("<Image>") and text.endswith("</Image>"):
+                        pass
+                    elif text.startswith("<table>") and text.endswith("</table>"):
+                        try:
+                            new_text = table_matrix2html(text)
+                        except:
+                            new_text = text.replace("<t>","").replace("<l>","").replace("<lt>","")
+                        markdown_element_list.append(new_text)
                     else:
-                        return_data = page_response.natural_text.replace("<t>","").replace("<l>","").replace("<lt>","")
+                        markdown_element_list.append(text)
+                return_data = "\n\n".join(markdown_element_list)
                     
             elif task_name == 'element_merge_detect':
-                pattern = r"\((\d+), (\d+)\)"
-                matches = re.findall(pattern, response_content)
-                return_data = [(int(x), int(y)) for x, y in matches]
+                return_data = eval(response_content)
             elif task_name == 'html_table_merge':
                 if not (response_content.startswith("<table>") and response_content.endswith("</table>")):
                     raise ValueError("Response is not a table")
@@ -297,7 +299,7 @@ def postprocess_markdown_text(args, response_text, pdf_path, page_number):
             new_text_list.append(text)
     return "\n\n".join(new_text_list)
 
-def bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
+def build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
     page_to_markdown_keys = list(page_to_markdown_result.keys())
     element_merge_detect_keys = list(element_merge_detect_result.keys())
     html_table_merge_keys = list(html_table_merge_result.keys())
@@ -444,7 +446,7 @@ async def process_pdf(args, worker_id: int, pdf_path: str):
         for page_number in page_to_markdown_result.keys():
             page_texts[str(page_number-1)] = "\n\n".join(page_to_markdown_result[page_number])
         
-        document_text = bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
+        document_text = build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
 
         return {
             "orig_path": pdf_path,
@@ -568,7 +570,11 @@ async def vllm_server_task(args, semaphore):
         "--max-model-len",
         str(args.model_max_context),
         "--gpu_memory_utilization",
-        str(0.8)
+        str(args.gpu_memory_utilization),
+        "--tensor_parallel_size",
+        str(args.tensor_parallel_size),
+        "--dtype",
+        str(args.dtype)
     ]
 
     proc = await asyncio.create_subprocess_exec(
@@ -728,6 +734,9 @@ async def main():
     parser.add_argument("--pages_per_group", type=int, default=500, help="Aiming for this many pdf pages per work item group")
     parser.add_argument("--max_page_retries", type=int, default=8, help="Max number of times we will retry rendering a page")
     parser.add_argument("--max_page_error_rate", type=float, default=0.004, help="Rate of allowable failed pages in a document, 1/250 by default")
+    parser.add_argument("--gpu_memory_utilization", type=float, default=0.8, help="Fraction of GPU memory to use, default is 0.8")
+    parser.add_argument("--tensor_parallel_size", type=int, default=1, help="Number of tensor parallel replicas")
+    parser.add_argument("--dtype", type=str, choices=['auto','half','float16', 'float', 'bfloat16', 'float32'], default="auto", help="Data type for model weights and activations.")
     parser.add_argument("--workers", type=int, default=8, help="Number of workers to run at a time")
 
     # Model parameters

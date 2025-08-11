@@ -10,8 +10,8 @@ from ocrflux.prompts import PageResponse, build_page_to_markdown_prompt, build_e
 def build_qwen2_5_vl_prompt(question):
     return (
             "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n"
-            f"<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>"
-            f"{question}<|im_end|>\n"
+            f"<|im_start|>user\n"
+            f"{question}<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n"
             "<|im_start|>assistant\n"
     )
 
@@ -46,7 +46,7 @@ def build_html_table_merge_query(text_1,text_2) -> dict:
     }
     return query
 
-def bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
+def build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
     page_to_markdown_keys = list(page_to_markdown_result.keys())
     element_merge_detect_keys = list(element_merge_detect_result.keys())
     html_table_merge_keys = list(html_table_merge_result.keys())
@@ -110,7 +110,7 @@ def parse(llm,file_path,skip_cross_page_merge=False,max_page_retries=0):
         
         attempt = 0
         while len(retry_list) > 0 and attempt < max_page_retries:
-            retry_page_to_markdown_query_list = [build_page_to_markdown_query(file_path,page_num) for page_num in retry_list]
+            retry_page_to_markdown_query_list = [build_page_to_markdown_query(file_path,i+1) for i in retry_list]
             retry_sampling_params = SamplingParams(temperature=0.1*attempt, max_tokens=8192)
             responses = llm.generate(retry_page_to_markdown_query_list, sampling_params=retry_sampling_params)
             results = [response.outputs[0].text for response in responses]
@@ -210,7 +210,7 @@ def parse(llm,file_path,skip_cross_page_merge=False,max_page_retries=0):
                     html_table_merge_result[key] = result
                     page_to_markdown_result_tmp[page_1][elem_idx_1] = result
 
-        document_text = bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
+        document_text = build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
         return {
             "orig_path": file_path,
             "num_pages": num_pages,

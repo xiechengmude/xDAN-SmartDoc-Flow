@@ -28,8 +28,8 @@ def build_page_to_markdown_query(args, file_path: str, page_number: int, target_
             {
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                     {"type": "text", "text": build_page_to_markdown_prompt()},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                 ],
             }
         ],
@@ -50,8 +50,8 @@ def build_element_merge_detect_query(args,text_list_1,text_list_2) -> dict:
             {
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                     {"type": "text", "text": build_element_merge_detect_prompt(text_list_1,text_list_2)},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                 ],
             }
         ],
@@ -72,8 +72,8 @@ def build_html_table_merge_query(args,text_1,text_2) -> dict:
             {
                 "role": "user",
                 "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                     {"type": "text", "text": build_html_table_merge_prompt(text_1,text_2)},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}},
                 ],
             }
         ],
@@ -200,7 +200,7 @@ async def process_task(args, task_name, task_args):
             attempt += 1
     return None
 
-def bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
+def build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result):
     page_to_markdown_keys = list(page_to_markdown_result.keys())
     element_merge_detect_keys = list(element_merge_detect_result.keys())
     html_table_merge_keys = list(html_table_merge_result.keys())
@@ -324,7 +324,7 @@ async def request(args, file_path: str):
                     html_table_merge_result[key] = result
                     page_to_markdown_result_tmp[page_1][elem_idx_1] = result
         
-        document_text = bulid_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
+        document_text = build_document_text(page_to_markdown_result, element_merge_detect_result, html_table_merge_result)
 
         return {
             "orig_path": file_path,

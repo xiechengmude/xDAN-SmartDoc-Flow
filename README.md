@@ -253,9 +253,12 @@ cd OCRFlux
 pip install -e . --find-links https://flashinfer.ai/whl/cu124/torch2.5/flashinfer/
 ```
 
-### Local Usage Example
+### Usage
 
 For quick testing, try the [web demo](https://5f65ccdc2d4fd2f364.gradio.live). To run locally, a GPU is required, as inference is powered by [vllm](hhttps://github.com/vllm-project/vllm) under the hood.
+
+
+#### Pipeline
 
 - For a pdf document:
     ```bash
@@ -271,7 +274,16 @@ For quick testing, try the [web demo](https://5f65ccdc2d4fd2f364.gradio.live). T
     ```bash
     python -m ocrflux.pipeline ./localworkspace --data test_pdf_dir/* --model /model_dir/OCRFlux-3B
     ```
-You can set `--skip_cross_page_merge` to skip the cross-page merging in the parsing process to accelerate, it would simply concatenate the parsing results of each page to generate final Markdown of the document.
+
+Notices:
+- You can set `--skip_cross_page_merge` to skip the cross-page merging in the parsing process to accelerate, it would simply concatenate the parsing results of each page to generate final Markdown of the document.
+
+- You can set `--gpu_memory_utilization` to set GPU memory utiliziation, e.g. `--gpu_memory_utilization 0.9`, default is 0.8.
+
+- OCRFlux is recommended to run on a GPU with more than 24GB of VRAM. However, if you have multiple smaller GPUs (e.g., 12GB), you can set `--tensor_parallel_size N` to run it on N GPUs.
+
+- When using OCRFlux on GPUs which do not support `bf16` like V100, you can set `--dtpye float32` instead.
+
 
 Results will be stored as JSONL files in the `./localworkspace/results` directory. 
 
@@ -287,7 +299,14 @@ Each line in JSONL files is a json object with the following fields:
 }
 ```
 
-### API for directly calling OCRFlux (New)
+Generate the final Markdown files by running the following command. Generated Markdown files will be in `./localworkspace/markdowns/DOCUMENT_NAME` directory.
+
+```bash
+python -m ocrflux.jsonl_to_markdown ./localworkspace
+```
+
+
+#### Offline Inference
 You can use the inference API to directly call OCRFlux in your codes without using an online vllm server like following:
 
 ```
@@ -306,9 +325,10 @@ if result != None:
 else:
     print("Parse failed.")
 ```
+
 If parsing is failed or there are fallback pages in the result, you can try to set the argument `max_page_retries` for the `parse` function with a positive integer to get a better result. But it may cause longer inference time.
 
-### Local Deployment (New)
+#### Online Deployment
 
 Run the following command to start the server:
 
@@ -350,7 +370,7 @@ else:
 ```
 
 
-### Docker Usage
+#### Docker Usage
 
 Requirements:
 
@@ -379,19 +399,13 @@ The parsing results will be stored in `/localworkspace/ocrflux_results` director
 python -m ocrflux.jsonl_to_markdown ./localworkspace/ocrflux_results
 ```
 
-#### Viewing Results
-Generate the final Markdown files by running the following command. Generated Markdown files will be in `./localworkspace/markdowns/DOCUMENT_NAME` directory.
-
-```bash
-python -m ocrflux.jsonl_to_markdown ./localworkspace
-```
-
 ### Full documentation for the pipeline
 
 ```bash
 python -m ocrflux.pipeline --help
 usage: pipeline.py [-h] [--task {pdf2markdown,merge_pages,merge_tables}] [--data [DATA ...]] [--pages_per_group PAGES_PER_GROUP] [--max_page_retries MAX_PAGE_RETRIES]
-                   [--max_page_error_rate MAX_PAGE_ERROR_RATE] [--workers WORKERS] [--model MODEL] [--model_max_context MODEL_MAX_CONTEXT] [--model_chat_template MODEL_CHAT_TEMPLATE]
+                   [--max_page_error_rate MAX_PAGE_ERROR_RATE] [--gpu_memory_utilization GPU_MEMORY_UTILIZATION] [--tensor_parallel_size TENSOR_PARALLEL_SIZE]
+                   [--dtype {auto,half,float16,float,bfloat16,float32}] [--workers WORKERS] [--model MODEL] [--model_max_context MODEL_MAX_CONTEXT] [--model_chat_template MODEL_CHAT_TEMPLATE]
                    [--target_longest_image_dim TARGET_LONGEST_IMAGE_DIM] [--skip_cross_page_merge] [--port PORT]
                    workspace
 
@@ -402,6 +416,8 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
+  --task {pdf2markdown,merge_pages,merge_tables}
+                        task names, could be 'pdf2markdown', 'merge_pages' or 'merge_tables'
   --data [DATA ...]     List of paths to files to process
   --pages_per_group PAGES_PER_GROUP
                         Aiming for this many pdf pages per work item group
@@ -409,6 +425,12 @@ options:
                         Max number of times we will retry rendering a page
   --max_page_error_rate MAX_PAGE_ERROR_RATE
                         Rate of allowable failed pages in a document, 1/250 by default
+  --gpu_memory_utilization GPU_MEMORY_UTILIZATION
+                        Fraction of GPU memory to use, default is 0.8
+  --tensor_parallel_size TENSOR_PARALLEL_SIZE
+                        Number of tensor parallel replicas
+  --dtype {auto,half,float16,float,bfloat16,float32}
+                        Data type for model weights and activations.
   --workers WORKERS     Number of workers to run at a time
   --model MODEL         The path to the model
   --model_max_context MODEL_MAX_CONTEXT
@@ -427,6 +449,9 @@ options:
 There are some nice reusable pieces of the code that may be useful for your own projects:
  - Processing millions of PDFs through our released model using VLLM - [pipeline.py](https://github.com/chatdoc-com/OCRFlux/blob/main/ocrflux/pipeline.py)
  - Generating final Markdowns from jsonl files - [jsonl_to_markdown.py](https://github.com/chatdoc-com/OCRFlux/blob/main/ocrflux/jsonl_to_markdown.py)
+ - Running offline inference using vllm - [inferencer.py](https://github.com/chatdoc-com/OCRFlux/blob/main/ocrflux/inference.py)
+ - Launching a vllm server - [server.py](https://github.com/chatdoc-com/OCRFlux/blob/main/ocrflux/server.sh)
+ - Running online inference using vllm - [client.py](https://github.com/chatdoc-com/OCRFlux/blob/main/ocrflux/client.py)
  - Evaluating the model on the single-page parsing task - [eval_page_to_markdown.py](https://github.com/chatdoc-com/OCRFlux/blob/main/eval/eval_page_to_markdown.py)
  - Evaluating the model on the table parising task - [eval_table_to_html.py](https://github.com/chatdoc-com/OCRFlux/blob/main/eval/eval_table_to_html.py)
  - Evaluating the model on the paragraphs/tables merging detection task - [eval_element_merge_detect.py](https://github.com/chatdoc-com/OCRFlux/blob/main/eval/eval_element_merge_detect.py)
